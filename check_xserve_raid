@@ -91,14 +91,9 @@ class Controller(object):
     def __init__(self, controller):
         status = controller['status']
         self.warnings = []
-        if status.get('fan-warning', False):
-            self.warnings.append('fan')
-        if status.get('power-warning', False):
-            self.warnings.append('power')
-        if status.get('temperature-warning', False):
-            self.warnings.append('temperature')
-        if status.get('ups-warning', False):
-            self.warnings.append('ups')
+        for warning in 'fan power temperature ups'.split():
+            if status.get('%s-warning' % warning, False):
+                self.warnings.append(warning)
 
     def check(self):
         if self.warnings:
