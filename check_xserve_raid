@@ -1,0 +1,181 @@
+#!/usr/bin/env python
+#
+#   check_xserve_raid  Nagios plugin to check Apple Xserve RAIDs
+#   Copyright (C) 2010  Tom Payne
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+from httplib import HTTPConnection, HTTP_PORT
+from itertools import chain
+from optparse import OptionParser
+from plistlib import readPlist, writePlistToString
+import sys
+
+
+OK, WARNING, CRITICAL, UNKNOWN = xrange(0, 4)
+status_message = 'OK WARNING CRITICAL UNKNOWN'.split()
+
+
+class Array(object):
+
+    def __init__(self, array):
+        self.id = array['id']
+        self.progress = array['progress']
+        self.raid_level = array['raid-level']
+        self.raid_status = array['raid-status']
+        self.sector_capacity = array['sector-capacity']
+        for i, u in reversed(list(enumerate('KB MB GB TB PB'.split()))):
+            if self.sector_capacity >= 2 ** (10 * i + 1):
+                self.capacity = '%0.2f%s' % (float(self.sector_capacity) / 2 ** (10 * i + 1), u)
+                break
+        else:
+            self.capacity = '0.00B'
+        self.slots = set(m['slot-id'] for m in array['members'] if m['slot-id'])
+        self.broken_raid_member_slots = set()
+        self.disk_cache_disabled_slots = set()
+        self.rebuilding_slots = set()
+        self.offline_slots = set()
+
+    def add_slot(self, id, status):
+        if status.get('broken-raid-member', False):
+            self.broken_raid_member_slots.add(id)
+        if not status['disk-cache-enabled']:
+            self.disk_cache_disabled_slots.add(id)
+        if not status['online']:
+            self.offline_slots.add(id)
+        if status['rebuilding']:
+            self.rebuilding_slots.add(id)
+
+    def check(self):
+        status = OK
+        value = ['%s RAID%s' % (self.capacity, self.raid_level), self.raid_status]
+        if self.raid_status != 'online':
+            status = max(status, CRITICAL)
+        if self.progress['add-member'] != 255:
+            value.append('adding members(%d%%)' % self.progress['add-member'])
+        if self.progress['expand'] != 255:
+            value.append('expanding(%d%%)' % self.progress['expand'])
+        if self.progress['initialize'] != 255:
+            value.append('initializing(%d%%)' % self.progress['initialize'])
+        if self.progress['verify'] != 255:
+            value.append('verifying(%d%%)' % self.progress['verify'])
+        if self.broken_raid_member_slots:
+            status = max(status, CRITICAL)
+            value.append('broken(%s)' % ', '.join('#%d' % id for id in sorted(self.broken_raid_member_slots)))
+        if self.disk_cache_disabled_slots:
+            status = max(status, WARNING)
+            value.append('disk cache disabled(%s)' % ', '.join('#%d' % id for id in sorted(self.disk_cache_disabled_slots)))
+        if self.rebuilding_slots:
+            status = max(status, WARNING)
+            value.append('rebuilding(%s)' % ', '.join('#%d' % id for id in sorted(self.rebuilding_slots)))
+        if self.offline_slots:
+            status = max(status, WARNING)
+            value.append('offline(%s)' % ', '.join('#%d' % id for id in sorted(self.offline_slots)))
+        return (status, 'array %d: %s' % (self.id, ', '.join(value)))
+
+
+class Controller(object):
+
+    def __init__(self, name, controller):
+        self.name = name
+        status = controller['status']
+        self.warnings = []
+        if status.get('fan-warning', False):
+            self.warnings.append('fan')
+        if status.get('power-warning', False):
+            self.warnings.append('power')
+        if status.get('temperature-warning', False):
+            self.warnings.append('temperature')
+        if status.get('ups-warning', False):
+            self.warnings.append('ups')
+
+    def check(self):
+        if self.warnings:
+            return (WARNING, '%s controller warnings: %s' % (self.name, ' '.join(self.warnings)))
+        return (OK, '%s controller: OK' % self.name)
+
+
+class Offline(object):
+
+    def __init__(self):
+        self.offline_slots = set()
+
+    def add_slot(self, id, status):
+        self.offline_slots.add(id)
+
+    def check(self):
+        if self.offline_slots:
+            return (OK, 'offline slots: %s' % (', '.join('#%d' % id for id in sorted(self.offline_slots))))
+        return (OK, None)
+
+
+class XserveRaid(object):
+
+    def __init__(self, host, username, password):
+        self.host = host
+        self.username = username
+        self.password = password
+
+    def get_page(self, apple_xsync, page_id):
+        body = writePlistToString({'get-page': {'page-id': page_id}})
+        headers = {}
+        headers['User-Agent'] = 'check_xserve_raid/1.0'
+        headers['Host'] = self.host
+        headers['Content-Type'] = 'application/xml'
+        headers['ACP-User'] = self.username
+        headers['ACP-Password'] = self.password
+        headers['Apple-Xsync'] = apple_xsync
+        conn = HTTPConnection(self.host, HTTP_PORT)
+        try:
+            conn.request('POST', '/cgi-bin/rsp-action', body, headers)
+            return readPlist(conn.getresponse())['get-page']
+        finally:
+            conn.close()
+
+
+def main(argv):
+    parser = OptionParser()
+    parser.add_option('-H', metavar='ADDRESS', dest='host')
+    parser.add_option('-c', metavar='top|bottom', dest='controller')
+    parser.add_option('-u', metavar='USERNAME', dest='username')
+    parser.add_option('-p', metavar='PASSWORD', dest='password')
+    parser.set_defaults(controller='top')
+    parser.set_defaults(username='guest')
+    parser.set_defaults(password='fkyaaa1i') # public
+    options, args = parser.parse_args(argv[1:])
+    xserve_raid = XserveRaid(options.host, options.username, options.password)
+    status = xserve_raid.get_page(options.controller, 1)
+    controller = Controller(options.controller, status['controller'])
+    arrays = [Array(array) for array in status['arrays']]
+    offline = Offline()
+    for slot in status['slots']:
+        id, status = slot['id'], slot['status']
+        try:
+            object = (array for array in arrays if id in array.slots).next()
+        except StopIteration:
+            object = offline
+        object.add_slot(id, status)
+    status, messages = OK, []
+    for object in chain([controller], arrays, [offline]):
+        object_status, object_message = object.check()
+        status = max(status, object_status)
+        if object_message:
+            messages.append(object_message)
+    print 'XSERVE RAID %s: %s' % (status_message[status], '; '.join(messages))
+    sys.exit(status)
+
+
+if __name__ == '__main__':
+    main(sys.argv)
