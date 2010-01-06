@@ -63,14 +63,9 @@ class Array(object):
         value = ['%s RAID%s' % (self.capacity, self.raid_level), self.raid_status]
         if self.raid_status != 'online':
             status = max(status, CRITICAL)
-        if self.progress['add-member'] != 255:
-            value.append('adding members(%d%%)' % self.progress['add-member'])
-        if self.progress['expand'] != 255:
-            value.append('expanding(%d%%)' % self.progress['expand'])
-        if self.progress['initialize'] != 255:
-            value.append('initializing(%d%%)' % self.progress['initialize'])
-        if self.progress['verify'] != 255:
-            value.append('verifying(%d%%)' % self.progress['verify'])
+        for key, action in (('add-member', 'adding members'), ('expand', 'expanding'), ('initialize', 'initializing'), ('verify', 'verifying')):
+            if self.progress.get(key, 255) != 255:
+                value.append('%s(%d%%)' % (action, self.progress[key]))
         if self.broken_raid_member_slots:
             status = max(status, CRITICAL)
             value.append('broken(%s)' % ', '.join('#%d' % id for id in sorted(self.broken_raid_member_slots)))
