@@ -75,7 +75,7 @@ class Array(object):
             status = max(status, CRITICAL)
             value.append('broken(%s)' % ', '.join('#%d' % id for id in sorted(self.broken_raid_member_slots)))
         if self.disk_cache_disabled_slots:
-            status = max(status, WARNING)
+            #status = max(status, WARNING)
             value.append('disk cache disabled(%s)' % ', '.join('#%d' % id for id in sorted(self.disk_cache_disabled_slots)))
         if self.rebuilding_slots:
             status = max(status, WARNING)
