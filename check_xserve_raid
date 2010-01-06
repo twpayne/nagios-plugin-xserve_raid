@@ -88,8 +88,7 @@ class Array(object):
 
 class Controller(object):
 
-    def __init__(self, name, controller):
-        self.name = name
+    def __init__(self, controller):
         status = controller['status']
         self.warnings = []
         if status.get('fan-warning', False):
@@ -103,8 +102,8 @@ class Controller(object):
 
     def check(self):
         if self.warnings:
-            return (WARNING, '%s controller warnings: %s' % (self.name, ' '.join(self.warnings)))
-        return (OK, '%s controller: OK' % self.name)
+            return (WARNING, 'controller warnings: %s' % ' '.join(self.warnings))
+        return (OK, None)
 
 
 class Offline(object):
@@ -157,7 +156,7 @@ def main(argv):
     options, args = parser.parse_args(argv[1:])
     xserve_raid = XserveRaid(options.host, options.username, options.password)
     status = xserve_raid.get_page(options.controller, 1)
-    controller = Controller(options.controller, status['controller'])
+    controller = Controller(status['controller'])
     arrays = [Array(array) for array in status['arrays']]
     offline = Offline()
     for slot in status['slots']:
