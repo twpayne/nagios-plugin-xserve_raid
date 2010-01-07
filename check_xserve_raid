@@ -158,12 +158,12 @@ def main(argv):
         for slot in status['slots']:
             slot_id, status = slot['id'], slot['status']
             try:
-                object = (array for array in arrays if slot_id in array.slots).next()
+                obj = (array for array in arrays if slot_id in array.slots).next()
             except StopIteration:
-                object = offline
-            object.add_slot(slot_id, status)
-        for object in chain([controller], arrays, [offline]):
-            object_status, object_message = object.check()
+                obj = offline
+            obj.add_slot(slot_id, status)
+        for obj in chain([controller], arrays, [offline]):
+            object_status, object_message = obj.check()
             status = max(status, object_status)
             if object_message:
                 messages.append(object_message)
