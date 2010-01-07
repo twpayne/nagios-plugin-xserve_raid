@@ -110,7 +110,7 @@ class Offline(object):
 
     def check(self):
         if self.offline_slots:
-            return (OK, 'offline slots: %s' % format_slots(self.offline_slots))
+            return (OK, 'offline(%s)' % format_slots(self.offline_slots))
         return (OK, None)
 
 
