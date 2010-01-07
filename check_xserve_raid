@@ -113,7 +113,7 @@ class Offline(object):
         return (OK, None)
 
 
-class XserveRaid(object):
+class XserveRAID(object):
 
     def __init__(self, host, username, password):
         self.host = host
@@ -147,7 +147,7 @@ def main(argv):
     parser.set_defaults(username='guest')
     parser.set_defaults(password='fkyaaa1i') # public
     options, args = parser.parse_args(argv[1:])
-    xserve_raid = XserveRaid(options.host, options.username, options.password)
+    xserve_raid = XserveRAID(options.host, options.username, options.password)
     status, messages = OK, []
     try:
         status = xserve_raid.get_page(options.controller, 1)
