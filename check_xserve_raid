@@ -28,6 +28,10 @@ OK, WARNING, CRITICAL, UNKNOWN = xrange(0, 4)
 status_message = 'OK WARNING CRITICAL UNKNOWN'.split()
 
 
+def format_slots(slots):
+    return ', '.join('#%d' % slot_id for slot_id in sorted(slots))
+
+
 class Array(object):
 
     def __init__(self, array):
@@ -68,16 +72,16 @@ class Array(object):
                 value.append('%s(%d%%)' % (action, self.progress[key]))
         if self.broken_raid_member_slots:
             status = max(status, CRITICAL)
-            value.append('broken(%s)' % ', '.join('#%d' % id for id in sorted(self.broken_raid_member_slots)))
+            value.append('broken(%s)' % format_slots(self.broken_raid_member_slots))
         if self.disk_cache_disabled_slots:
             #status = max(status, WARNING)
-            value.append('disk cache disabled(%s)' % ', '.join('#%d' % id for id in sorted(self.disk_cache_disabled_slots)))
+            value.append('disk cache disabled(%s)' % format_slots(self.disk_cache_disabled_slots))
         if self.rebuilding_slots:
             status = max(status, WARNING)
-            value.append('rebuilding(%s)' % ', '.join('#%d' % id for id in sorted(self.rebuilding_slots)))
+            value.append('rebuilding(%s)' % format_slots(self.rebuilding_slots))
         if self.offline_slots:
             status = max(status, WARNING)
-            value.append('offline(%s)' % ', '.join('#%d' % id for id in sorted(self.offline_slots)))
+            value.append('offline(%s)' % format_slots(self.offline_slots))
         return (status, 'array %d: %s' % (self.id, ', '.join(value)))
 
 
@@ -106,7 +110,7 @@ class Offline(object):
 
     def check(self):
         if self.offline_slots:
-            return (OK, 'offline slots: %s' % (', '.join('#%d' % id for id in sorted(self.offline_slots))))
+            return (OK, 'offline slots: %s' % format_slots(self.offline_slots))
         return (OK, None)
 
 
