@@ -145,23 +145,26 @@ def main(argv):
     parser.set_defaults(password='fkyaaa1i') # public
     options, args = parser.parse_args(argv[1:])
     xserve_raid = XserveRaid(options.host, options.username, options.password)
-    status = xserve_raid.get_page(options.controller, 1)
-    controller = Controller(status['controller'])
-    arrays = [Array(array) for array in status['arrays']]
-    offline = Offline()
-    for slot in status['slots']:
-        id, status = slot['id'], slot['status']
-        try:
-            object = (array for array in arrays if id in array.slots).next()
-        except StopIteration:
-            object = offline
-        object.add_slot(id, status)
     status, messages = OK, []
-    for object in chain([controller], arrays, [offline]):
-        object_status, object_message = object.check()
-        status = max(status, object_status)
-        if object_message:
-            messages.append(object_message)
+    try:
+        status = xserve_raid.get_page(options.controller, 1)
+        controller = Controller(status['controller'])
+        arrays = [Array(array) for array in status['arrays']]
+        offline = Offline()
+        for slot in status['slots']:
+            id, status = slot['id'], slot['status']
+            try:
+                object = (array for array in arrays if id in array.slots).next()
+            except StopIteration:
+                object = offline
+            object.add_slot(id, status)
+        for object in chain([controller], arrays, [offline]):
+            object_status, object_message = object.check()
+            status = max(status, object_status)
+            if object_message:
+                messages.append(object_message)
+    except Exception as e:
+        status, messages = (CRITICAL, [str(e)])
     print 'XSERVE RAID %s: %s' % (status_message[status], '; '.join(messages))
     sys.exit(status)
 
