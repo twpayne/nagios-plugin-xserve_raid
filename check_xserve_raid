@@ -134,7 +134,13 @@ class XserveRAID(object):
         conn = HTTPConnection(self.host, HTTP_PORT)
         try:
             conn.request('POST', '/cgi-bin/rsp-action', body, headers)
-            return readPlist(conn.getresponse())['get-page']
+            plist = readPlist(conn.getresponse())
+            if 'status' in plist:
+                if plist['status'] == -16:
+                    raise RuntimeError('access denied')
+                else:
+                    raise RuntimeError('unknown status: %d' % plist['status'])
+            return plist['get-page']
         finally:
             conn.close()
 
