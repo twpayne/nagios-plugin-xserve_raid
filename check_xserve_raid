@@ -21,6 +21,7 @@ from httplib import HTTPConnection, HTTP_PORT
 from itertools import chain
 from optparse import OptionParser
 from plistlib import readPlist, writePlistToString
+import socket
 import sys
 
 
@@ -167,8 +168,10 @@ def main(argv):
             exit_status = max(exit_status, object_status)
             if object_message:
                 messages.append(object_message)
-    except Exception:
+    except (EnvironmentError, RuntimeError):
         exit_status, messages = (CRITICAL, [str(sys.exc_info()[1])])
+    except socket.error:
+        exit_status, messages = (CRITICAL, [str(sys.exc_info()[1][1])])
     print 'XSERVE RAID %s: %s' % (status_message[exit_status], '; '.join(messages))
     sys.exit(exit_status)
 
