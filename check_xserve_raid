@@ -58,11 +58,12 @@ class Array(object):
 
     def check(self):
         status = OK
-        capacity = '0.00B'
         for i, u in reversed(list(enumerate('KB MB GB TB PB'.split()))):
             if self.sector_capacity >= 2 ** (10 * i + 1):
                 capacity = '%0.2f%s' % (float(self.sector_capacity) / 2 ** (10 * i + 1), u)
                 break
+        else:
+            capacity = '%0.2fB' % (512 * float(self.sector_capacity))
         value = ['%s RAID%s' % (capacity, self.raid_level), self.raid_status]
         if self.raid_status != 'online':
             status = max(status, CRITICAL)
