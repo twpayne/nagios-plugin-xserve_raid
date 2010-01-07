@@ -46,15 +46,15 @@ class Array(object):
         self.rebuilding_slots = set()
         self.offline_slots = set()
 
-    def add_slot(self, id, status):
+    def add_slot(self, slot_id, status):
         if status.get('broken-raid-member', False):
-            self.broken_raid_member_slots.add(id)
+            self.broken_raid_member_slots.add(slot_id)
         if not status['disk-cache-enabled']:
-            self.disk_cache_disabled_slots.add(id)
+            self.disk_cache_disabled_slots.add(slot_id)
         if not status['online']:
-            self.offline_slots.add(id)
+            self.offline_slots.add(slot_id)
         if status['rebuilding']:
-            self.rebuilding_slots.add(id)
+            self.rebuilding_slots.add(slot_id)
 
     def check(self):
         status = OK
@@ -105,8 +105,8 @@ class Offline(object):
     def __init__(self):
         self.offline_slots = set()
 
-    def add_slot(self, id, status):
-        self.offline_slots.add(id)
+    def add_slot(self, slot_id, status):
+        self.offline_slots.add(slot_id)
 
     def check(self):
         if self.offline_slots:
@@ -156,12 +156,12 @@ def main(argv):
         arrays = [Array(array) for array in status['arrays']]
         offline = Offline()
         for slot in status['slots']:
-            id, status = slot['id'], slot['status']
+            slot_id, status = slot['id'], slot['status']
             try:
-                object = (array for array in arrays if id in array.slots).next()
+                object = (array for array in arrays if slot_id in array.slots).next()
             except StopIteration:
                 object = offline
-            object.add_slot(id, status)
+            object.add_slot(slot_id, status)
         for object in chain([controller], arrays, [offline]):
             object_status, object_message = object.check()
             status = max(status, object_status)
