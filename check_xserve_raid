@@ -40,12 +40,6 @@ class Array(object):
         self.raid_level = array['raid-level']
         self.raid_status = array['raid-status']
         self.sector_capacity = array['sector-capacity']
-        for i, u in reversed(list(enumerate('KB MB GB TB PB'.split()))):
-            if self.sector_capacity >= 2 ** (10 * i + 1):
-                self.capacity = '%0.2f%s' % (float(self.sector_capacity) / 2 ** (10 * i + 1), u)
-                break
-        else:
-            self.capacity = '0.00B'
         self.slots = set(m['slot-id'] for m in array['members'] if m['slot-id'])
         self.broken_raid_member_slots = set()
         self.disk_cache_disabled_slots = set()
@@ -64,7 +58,12 @@ class Array(object):
 
     def check(self):
         status = OK
-        value = ['%s RAID%s' % (self.capacity, self.raid_level), self.raid_status]
+        capacity = '0.00B'
+        for i, u in reversed(list(enumerate('KB MB GB TB PB'.split()))):
+            if self.sector_capacity >= 2 ** (10 * i + 1):
+                capacity = '%0.2f%s' % (float(self.sector_capacity) / 2 ** (10 * i + 1), u)
+                break
+        value = ['%s RAID%s' % (capacity, self.raid_level), self.raid_status]
         if self.raid_status != 'online':
             status = max(status, CRITICAL)
         for key, action in (('add-member', 'adding members'), ('expand', 'expanding'), ('initialize', 'initializing'), ('verify', 'verifying')):
