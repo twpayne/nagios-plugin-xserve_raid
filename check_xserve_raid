@@ -57,7 +57,7 @@ class Array(object):
             self.rebuilding_slots.add(slot_id)
 
     def check(self):
-        status = OK
+        exit_status = OK
         for i, u in reversed(list(enumerate('KB MB GB TB PB'.split()))):
             if self.sector_capacity >= 2 ** (10 * i + 1):
                 capacity = '%0.2f%s' % (float(self.sector_capacity) / 2 ** (10 * i + 1), u)
@@ -66,23 +66,23 @@ class Array(object):
             capacity = '%0.2fB' % (512 * float(self.sector_capacity))
         value = ['%s RAID%s' % (capacity, self.raid_level), self.raid_status]
         if self.raid_status != 'online':
-            status = max(status, CRITICAL)
+            exit_status = max(exit_status, CRITICAL)
         for key, action in (('add-member', 'adding members'), ('expand', 'expanding'), ('initialize', 'initializing'), ('verify', 'verifying')):
             if self.progress.get(key, 255) != 255:
                 value.append('%s(%d%%)' % (action, self.progress[key]))
         if self.broken_raid_member_slots:
-            status = max(status, CRITICAL)
+            exit_status = max(exit_status, CRITICAL)
             value.append('broken(%s)' % format_slots(self.broken_raid_member_slots))
         if self.disk_cache_disabled_slots:
-            #status = max(status, WARNING)
+            #exit_status = max(exit_status, WARNING)
             value.append('disk cache disabled(%s)' % format_slots(self.disk_cache_disabled_slots))
         if self.rebuilding_slots:
-            status = max(status, WARNING)
+            exit_status = max(exit_status, WARNING)
             value.append('rebuilding(%s)' % format_slots(self.rebuilding_slots))
         if self.offline_slots:
-            status = max(status, WARNING)
+            exit_status = max(exit_status, WARNING)
             value.append('offline(%s)' % format_slots(self.offline_slots))
-        return (status, 'array %d: %s' % (self.id, ', '.join(value)))
+        return (exit_status, 'array %d: %s' % (self.id, ', '.join(value)))
 
 
 class Controller(object):
