@@ -121,7 +121,7 @@ class XserveRAID(object):
         self.username = username
         self.password = password
 
-    def get_page(self, apple_xsync, page_id):
+    def get_page(self, page_id, apple_xsync):
         body = writePlistToString({'get-page': {'page-id': page_id}})
         headers = {}
         headers['User-Agent'] = 'check_xserve_raid/1.0'
@@ -151,7 +151,7 @@ def main(argv):
     xserve_raid = XserveRAID(options.host, options.username, options.password)
     status, messages = OK, []
     try:
-        status = xserve_raid.get_page(options.controller, 1)
+        status = xserve_raid.get_page(1, options.controller)
         controller = Controller(status['controller'])
         arrays = [Array(array) for array in status['arrays']]
         offline = Offline()
