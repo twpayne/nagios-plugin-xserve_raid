@@ -149,7 +149,7 @@ def main(argv):
     parser.set_defaults(password='fkyaaa1i') # public
     options, args = parser.parse_args(argv[1:])
     xserve_raid = XserveRAID(options.host, options.username, options.password)
-    status, messages = OK, []
+    exit_status, messages = OK, []
     try:
         status = xserve_raid.get_page(1, options.controller)
         controller = Controller(status['controller'])
@@ -164,13 +164,13 @@ def main(argv):
             obj.add_slot(slot_id, status)
         for obj in chain([controller], arrays, [offline]):
             object_status, object_message = obj.check()
-            status = max(status, object_status)
+            exit_status = max(exit_status, object_status)
             if object_message:
                 messages.append(object_message)
-    except Exception as e:
-        status, messages = (CRITICAL, [str(e)])
-    print 'XSERVE RAID %s: %s' % (status_message[status], '; '.join(messages))
-    sys.exit(status)
+    except Exception:
+        exit_status, messages = (CRITICAL, [str(sys.exc_info()[1])])
+    print 'XSERVE RAID %s: %s' % (status_message[exit_status], '; '.join(messages))
+    sys.exit(exit_status)
 
 
 if __name__ == '__main__':
