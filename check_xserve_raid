@@ -143,18 +143,16 @@ class XserveRAID(object):
         self.username = username
         self.password = password
 
-    def rsp_action(self, request, apple_xsync):
-        body = writePlistToString(request)
-        headers = {}
-        headers['User-Agent'] = 'check_xserve_raid/1.0'
-        headers['Host'] = self.host
-        headers['Content-Type'] = 'application/xml'
-        headers['ACP-User'] = self.username
-        headers['ACP-Password'] = self.password
-        headers['Apple-Xsync'] = apple_xsync
+    def get(self, url, request, headers={}):
         conn = HTTPConnection(self.host, HTTP_PORT)
         try:
-            conn.request('POST', '/cgi-bin/rsp-action', body, headers)
+            headers['User-Agent'] = 'check_xserve_raid/1.0'
+            headers['Host'] = self.host
+            headers['Content-Type'] = 'application/xml'
+            headers['ACP-User'] = self.username
+            headers['ACP-Password'] = self.password
+            body = writePlistToString(request)
+            conn.request('POST', url, body, headers)
             plist = readPlist(conn.getresponse())
             if 'status' in plist:
                 if plist['status'] == -16:
@@ -165,8 +163,14 @@ class XserveRAID(object):
         finally:
             conn.close()
 
+    def acp_action(self, key):
+        return self.get('/cgi-bin/acp-action', {key: {}})[key]
+
     def get_page(self, page_id, apple_xsync):
-        return self.rsp_action({'get-page': {'page-id': page_id}}, apple_xsync)['get-page']
+        return self.get('/cgi-bin/rsp-action', {'get-page': {'page-id': page_id}}, {'Apple-Xsync': apple_xsync})['get-page']
+
+    def perform(self, requests, apple_xsync):
+        return self.get('/cgi-bin/perform', {'requests': requests}, {'Apple-Xsync': apple_xsync})['responses']
 
 
 def main(argv):
