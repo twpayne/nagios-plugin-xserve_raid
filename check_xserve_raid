@@ -64,15 +64,12 @@ class Array(object):
         self.sector_capacity = array['sector-capacity']
         self.slots = set(m['slot-id'] for m in array['members'] if m['slot-id'])
         self.broken_raid_member_slots = set()
-        self.disk_cache_disabled_slots = set()
         self.rebuilding_slots = set()
         self.offline_slots = set()
 
     def add_slot(self, slot_id, status):
         if status.get('broken-raid-member', False):
             self.broken_raid_member_slots.add(slot_id)
-        if not status['disk-cache-enabled']:
-            self.disk_cache_disabled_slots.add(slot_id)
         if not status['online']:
             self.offline_slots.add(slot_id)
         if status['rebuilding']:
@@ -95,9 +92,6 @@ class Array(object):
         if self.broken_raid_member_slots:
             exit_status = max(exit_status, CRITICAL)
             value.append('broken(%s)' % format_slots(self.broken_raid_member_slots))
-        if self.disk_cache_disabled_slots:
-            #exit_status = max(exit_status, WARNING)
-            value.append('disk cache disabled(%s)' % format_slots(self.disk_cache_disabled_slots))
         if self.rebuilding_slots:
             exit_status = max(exit_status, WARNING)
             value.append('rebuilding(%s)' % format_slots(self.rebuilding_slots))
