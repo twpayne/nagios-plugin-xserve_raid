@@ -143,8 +143,8 @@ class XserveRAID(object):
         self.username = username
         self.password = password
 
-    def get_page(self, page_id, apple_xsync):
-        body = writePlistToString({'get-page': {'page-id': page_id}})
+    def rsp_action(self, request, apple_xsync):
+        body = writePlistToString(request)
         headers = {}
         headers['User-Agent'] = 'check_xserve_raid/1.0'
         headers['Host'] = self.host
@@ -161,9 +161,12 @@ class XserveRAID(object):
                     raise RuntimeError('access denied')
                 else:
                     raise RuntimeError('unknown status: %d' % plist['status'])
-            return plist['get-page']
+            return plist
         finally:
             conn.close()
+
+    def get_page(self, page_id, apple_xsync):
+        return self.rsp_action({'get-page': {'page-id': page_id}}, apple_xsync)['get-page']
 
 
 def main(argv):
