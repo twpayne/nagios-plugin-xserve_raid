@@ -30,7 +30,28 @@ status_message = 'OK WARNING CRITICAL UNKNOWN'.split()
 
 
 def format_slots(slots):
-    return ', '.join('#%d' % slot_id for slot_id in sorted(slots))
+    if not slots:
+        return 'none'
+    left = right = None
+    ranges = []
+    for slot in sorted(slots):
+        if left is None:
+            left = right = slot
+        elif slot == right + 1:
+            right = slot
+        else:
+            ranges.append((left, right))
+            left = right = slot
+    ranges.append((left, right))
+    if ranges == [(1, 7)]:
+        return 'all'
+    ss = []
+    for left, right in ranges:
+        if left == right:
+            ss.append('#%d' % left)
+        else:
+            ss.append('#%d-#%d' % (left, right))
+    return ', '.join(ss)
 
 
 class Array(object):
