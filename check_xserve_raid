@@ -186,6 +186,32 @@ def main(argv):
     xserve_raid = XserveRAID(options.host, options.username, options.password)
     exit_status, messages = OK, []
     try:
+        power_state = xserve_raid.acp_action('power-state-get')['power-state']
+        if not power_state:
+            exit_status = max(exit_status, CRITICAL)
+            messages.append('power off')
+        status = xserve_raid.perform([{'inputs': {}, 'method': '/system/get-system-status'}], options.controller)[0]['outputs']['status']
+        if status['enclosure']['buzzer'] != 'off':
+            exit_status = max(exit_status, WARNING)
+            messages.append('buzzer %s' % status['enclosure']['buzzer'])
+        for key, value in status['monitor'].items():
+            if value != 'ok':
+                exit_status = max(exit_status, CRITICAL)
+                messages.append('%s %s' % (key, value))
+        if status['raid-controller']['fibre-link-state'] != 'up':
+            exit_status = max(exit_status, CRITICAL)
+            messages.append('%s %s' % ('fibre-link-state', status['raid-controller']['fibre-link-state']))
+        smart_drives = set()
+        for drive in status['smart']:
+            if drive['status']:
+                smart_drives.add(drive['drive-id'])
+        if smart_drives:
+            exit_status = max(exit_status, CRITICAL)
+            messages.append('smart(%s)' % format_slots(smart_drives))
+        for key, value in status['ups'].items():
+            if value:
+                exit_status = max(exit_status, WARNING)
+                messages.append(key)
         status = xserve_raid.get_page(1, options.controller)
         controller = Controller(status['controller'])
         arrays = [Array(array) for array in status['arrays']]
