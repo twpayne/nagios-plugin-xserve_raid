@@ -207,21 +207,29 @@ def main(argv):
                 exit_status = max(exit_status, WARNING)
                 messages.append(key)
         status = xserve_raid.get_page(1, options.controller)
-        controller = Controller(status['controller'])
-        arrays = [Array(array) for array in status['arrays']]
-        offline = Offline()
-        for slot in status['slots']:
-            slot_id, status = slot['id'], slot['status']
-            try:
-                obj = (array for array in arrays if slot_id in array.slots).next()
-            except StopIteration:
-                obj = offline
-            obj.add_slot(slot_id, status)
-        for obj in chain([controller], arrays, [offline]):
-            object_status, object_message = obj.check()
-            exit_status = max(exit_status, object_status)
-            if object_message:
-                messages.append(object_message)
+        if 'status' in status:
+            if status['status'] == -6745:
+                exit_status = max(exit_status, UNKNOWN)
+                messages.append('controller starting up...')
+            else:
+                exit_status = max(exit_status, UNKNOWN)
+                messages.append(str(status['status']))
+        else:
+            controller = Controller(status['controller'])
+            arrays = [Array(array) for array in status['arrays']]
+            offline = Offline()
+            for slot in status['slots']:
+                slot_id, status = slot['id'], slot['status']
+                try:
+                    obj = (array for array in arrays if slot_id in array.slots).next()
+                except StopIteration:
+                    obj = offline
+                obj.add_slot(slot_id, status)
+            for obj in chain([controller], arrays, [offline]):
+                object_status, object_message = obj.check()
+                exit_status = max(exit_status, object_status)
+                if object_message:
+                    messages.append(object_message)
     except (EnvironmentError, RuntimeError):
         exit_status, messages = (CRITICAL, [str(sys.exc_info()[1])])
     except socket.error:
