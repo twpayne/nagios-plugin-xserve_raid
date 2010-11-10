@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+#
+#   parse_RAIDAdmin_plist
+#   Copyright (C) 2010  Tom Payne
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+from optparse import OptionParser
+import os
+import os.path
+from plistlib import readPlist
+import pwd
+import sys
+
+
+def main(argv):
+    parser = OptionParser()
+    parser.add_option('-p', metavar='PATH', dest='path')
+    parser.set_defaults(path='')
+    options, args = parser.parse_args(argv[1:])
+    if not args:
+        args = [os.path.join(pwd.getpwuid(os.getuid()).pw_dir, 'Library', 'Preferences', 'com.apple.RAIDAdmin.plist')]
+    for arg in args:
+        plist = readPlist(open(arg))
+        for system in plist['Systems']:
+            print '# %s' % system['Name']
+            for ipaddress in system['IPAddress']:
+                for controller in ('top', 'bottom'):
+                    print '%scheck_xserve_raid -H %s -c %s -p %s' % (options.path, ipaddress, controller, system['Attributes'])
+
+
+if __name__ == '__main__':
+    main(sys.argv)

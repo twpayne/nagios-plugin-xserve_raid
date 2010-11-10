@@ -63,16 +63,25 @@ Syntax:
 `<password-hash>` is the hashed administration/monitoring password.
 
 The default username and password hash corresponds to the default
-administration username and password of `guest` and `public`.  If you are not
-using the default username or password then the easiest way to find these
-values is by sniffing the network traffic between a computer running the Xserve
-RAID Admin software and the Xserve RAID unit.  The software makes unencrypted
-HTTP requests to the Xserve RAID unit, the values are in the `ACP-User` and
-`ACP-Password:` headers.
+administration username and password of `guest` and `public`.  If you use
+Apple's RAID Admin tool then the password hash is stored in
+
+	~/Library/Preferences/com.apple.RAIDAdmin.plist
+
+You can use the bundled script `parse_RAIDAdmin_plist` to automatically
+generate check commands for your Xserve RAID systems.  Run it on the same
+machine as you run Apple's RAID Admin tool.  The output is a list of check
+commands, for example:
+
+	$ ./parse_RAIDAdmin_plist
+	# xraid1
+	check_xserver_raid -H 10.20.30.40 -c top -p xxxxxxxx
+	check_xserver_raid -H 10.20.30.40 -c bottom -p xxxxxxxx
+	check_xserver_raid -H 10.20.30.41 -c top -p xxxxxxxx
+	check_xserver_raid -H 10.20.30.41 -c bottom -p xxxxxxxx
 
 If `check_xserve_raid` is running correctly, you should see output like:
-
-	$ check_xserve_raid -H xraid1-top -c top -p xxxxxxxx
+	$ ./check_xserve_raid -H xraid1-top -c top -p xxxxxxxx
 	XSERVE RAID OK: array 1: 2.73TB RAID5, online
 	$ echo $?
 	0
