@@ -75,10 +75,10 @@ commands, for example:
 
 	$ ./parse_RAIDAdmin_plist
 	# xraid1
-	check_xserver_raid -H 10.20.30.40 -c top -p xxxxxxxx
-	check_xserver_raid -H 10.20.30.40 -c bottom -p xxxxxxxx
-	check_xserver_raid -H 10.20.30.41 -c top -p xxxxxxxx
-	check_xserver_raid -H 10.20.30.41 -c bottom -p xxxxxxxx
+	check_xserve_raid -H 10.20.30.40 -c top -p xxxxxxxx
+	check_xserve_raid -H 10.20.30.40 -c bottom -p xxxxxxxx
+	check_xserve_raid -H 10.20.30.41 -c top -p xxxxxxxx
+	check_xserve_raid -H 10.20.30.41 -c bottom -p xxxxxxxx
 
 If `check_xserve_raid` is running correctly, you should see output like:
 	$ ./check_xserve_raid -H xraid1-top -c top -p xxxxxxxx
