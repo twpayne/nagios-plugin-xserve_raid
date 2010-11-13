@@ -149,6 +149,13 @@ Bugs
 There is little error handling.
 
 
+Thanks
+------
+
+Thanks to Mike Hathaway of Hathaway Digital for the tip about the credentials
+in `com.apple.RAIDAdmin.plist`.
+
+
 License
 -------
 
