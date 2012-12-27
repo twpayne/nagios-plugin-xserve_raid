@@ -52,6 +52,7 @@ Usage
 -----
 
 Syntax:
+
 	check_xserve_raid -H <address> -c <controller> -u <username> -p <password-hash>
 
 `<address>` is the IP address or hostname of the Xserve RAID network interface.
@@ -81,6 +82,7 @@ commands, for example:
 	check_xserve_raid -H 10.20.30.41 -c bottom -p xxxxxxxx
 
 If `check_xserve_raid` is running correctly, you should see output like:
+
 	$ ./check_xserve_raid -H xraid1-top -c top -p xxxxxxxx
 	XSERVE RAID OK: array 1: 2.73TB RAID5, online
 	$ echo $?
